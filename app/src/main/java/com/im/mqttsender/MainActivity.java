@@ -2,6 +2,8 @@ package com.im.mqttsender;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -26,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText et;
     private TextView tv;
     private SimpleDateFormat ft;
-    public static final String BROKER_URL = "tcp://openim.top:1883";
+    public static final String BROKER_URL = "tcp://q.emqtt.com:1883";
     public static final String TOPIC = "MQTT-Demo";
     private MqttClient serverClient;
     private String clientITd;
@@ -51,7 +53,11 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                    MyLog.showLog(Thread.currentThread().getName() + "--消息内容::" + new String(mqttMessage.getPayload(),"UTF-8"));
+                    String message = new String(mqttMessage.getPayload(), "UTF-8");
+                    MyLog.showLog("消息内容::" + message);
+                    Message msg = handler.obtainMessage();
+                    msg.obj = message;
+                    handler.sendMessage(msg);
                 }
 
                 @Override
@@ -59,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             mqttClient.connect();
-            mqttClient.subscribe(TOPIC);
+            mqttClient.subscribe(TOPIC,2);
             MyLog.showLog("订阅成功");
         } catch (MqttException e) {
             e.printStackTrace();
@@ -74,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             serverClient = new MqttClient(BROKER_URL, MqttClient.generateClientId(), new MemoryPersistence());
-            serverClient.connect();
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -86,14 +91,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void publishMessage(View view) {
+
         String text = et.getText().toString().trim();
-        if (TextUtils.isEmpty(text)){
+        if (TextUtils.isEmpty(text)) {
             return;
         }
         text = "发送时间:" + ft.format(new Date()) + "**" + text;
-        final MqttTopic temperatureTopic = serverClient.getTopic(TOPIC);
-        final MqttMessage message = new MqttMessage(text.getBytes());
         try {
+            serverClient.connect();
+            final MqttTopic temperatureTopic = serverClient.getTopic(TOPIC);
+            final MqttMessage message = new MqttMessage(text.getBytes());
+            message.setQos(2);
+            message.setRetained(true);
             temperatureTopic.publish(message);
             MyLog.showLog("发布消息成功::" + message);
             et.setText("");
@@ -112,4 +121,12 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            tv.append("" + msg.obj + '\n');
+        }
+    };
 }
