@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv;
     private SimpleDateFormat ft;
     public static final String BROKER_URL = "tcp://q.emqtt.com:1883";
-    public static final String TOPIC = "MQTT-Demo";
+    public static final String TOPIC = "MQTT-Demo-1";
     private MqttClient serverClient;
     private String clientITd;
     private MqttClient mqttClient;
@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
                 public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
                     String message = new String(mqttMessage.getPayload(), "UTF-8");
                     MyLog.showLog("消息内容::" + message);
+                    MyLog.showLog("消息级别::" + mqttMessage.getQos());
+                    MyLog.showLog("是否重复::" + mqttMessage.isDuplicate());
                     Message msg = handler.obtainMessage();
                     msg.obj = message;
                     handler.sendMessage(msg);
@@ -62,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                   MyLog.showLog("发送完成");
                 }
             });
             mqttClient.connect();
@@ -102,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
             final MqttTopic temperatureTopic = serverClient.getTopic(TOPIC);
             final MqttMessage message = new MqttMessage(text.getBytes());
             message.setQos(2);
-            message.setRetained(true);
+            message.setRetained(false);
             temperatureTopic.publish(message);
             MyLog.showLog("发布消息成功::" + message);
             et.setText("");
