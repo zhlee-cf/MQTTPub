@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(text)) {
             return;
         }
-        text = "发送时间:" + ft.format(new Date()) + "**" + text;
+        text = ft.format(new Date()) + "**" + text;
         try {
             serverClient.connect();
             final MqttTopic temperatureTopic = serverClient.getTopic(TOPIC);
